@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bass-dark text-white font-sans antialiased;
+  }
+}
+
+@layer components {
+  .bass-button {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;
+    @apply bg-bass-gradient hover:shadow-bass-glow;
+    @apply transform hover:scale-105 active:scale-95;
+  }
+  
+  .bass-button-secondary {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;
+    @apply bg-bass-card border-2 border-bass-pink/30;
+    @apply hover:border-bass-pink hover:shadow-bass-glow;
+  }
+  
+  .bass-card {
+    @apply bg-bass-card rounded-xl p-6 shadow-bass-card;
+    @apply border border-white/10;
+  }
+  
+  .bass-card-3d {
+    @apply bass-card relative;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .bass-input {
+    @apply bg-black/50 border border-white/20 rounded-lg px-4 py-2;
+    @apply focus:border-bass-pink focus:outline-none focus:shadow-bass-glow;
+    @apply transition-all duration-200;
+  }
+  
+  .bass-radio {
+    @apply appearance-none w-5 h-5 border-2 border-white/30 rounded-full;
+    @apply checked:border-bass-pink checked:bg-bass-gradient;
+    @apply transition-all duration-200;
+  }
+  
+  .bass-checkbox {
+    @apply appearance-none w-5 h-5 border-2 border-white/30 rounded;
+    @apply checked:border-bass-pink checked:bg-bass-gradient;
+    @apply transition-all duration-200;
+  }
+}
+
+/* Peaks.js styling */
+.peaks-overview-container,
+.peaks-zoomview-container {
+  @apply rounded-lg overflow-hidden;
+}
+
+.peaks-waveform-segment {
+  opacity: 0.3;
+}
+
+.peaks-waveform-point {
+  color: #ff4ad5;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 74, 213, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 74, 213, 0.8);
+}

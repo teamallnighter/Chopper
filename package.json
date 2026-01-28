@@ -1,0 +1,91 @@
+{
+  "name": "chopper",
+  "version": "2.0.0",
+  "description": "Mudpie Chopper - Bass Daddy Devices audio sample splitting tool",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build-icons": "electron-icon-builder --input=./assets/icon/chopper.png --output=./assets/icon/built",
+    "build-python": "./build-python.sh",
+    "build-css": "tailwindcss -i ./styles-src.css -o ./styles.css",
+    "watch-css": "tailwindcss -i ./styles-src.css -o ./styles.css --watch",
+    "clean": "rm -rf dist build",
+    "prebuild": "npm run clean && npm run build-css && npm run build-python",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder -mwl"
+  },
+  "keywords": [
+    "audio",
+    "sample",
+    "splitter",
+    "electron",
+    "bass-daddy"
+  ],
+  "author": "Bass Daddy Devices",
+  "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "peaks.js": "^3.3.2"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^26.0.12",
+    "electron-icon-builder": "^2.0.1",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33"
+  },
+  "build": {
+    "appId": "com.bassdaddydevices.chopper",
+    "productName": "Mudpie Chopper",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "license.js",
+      "index.html",
+      "styles.css",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/audioSplitCLI",
+        "to": "audioSplitCLI"
+      },
+      {
+        "from": "resources/ffmpeg",
+        "to": "ffmpeg"
+      },
+      {
+        "from": "resources/audiowaveform",
+        "to": "audiowaveform"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "icon": "assets/icons/mac/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "assets/icons/win/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "icon": "assets/icons/png",
+      "category": "Audio",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
+}
