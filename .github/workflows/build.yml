@@ -73,7 +73,7 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
-            dist/*.exe
+            dist/Mudpie Chopper*.exe
             dist/*.AppImage
             dist/*.deb
           if-no-files-found: warn
