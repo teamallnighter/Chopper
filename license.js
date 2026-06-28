@@ -144,22 +144,6 @@ class LicenseManager {
     return { allowed: true };
   }
 
-  // Check if sample count is within limits
-  canExportSamples(newSampleCount) {
-    if (this.isPro()) return { allowed: true };
-
-    const totalAfter = this.sessionSampleCount + newSampleCount;
-    if (totalAfter > FREE_LIMITS.maxSamples) {
-      return {
-        allowed: false,
-        reason: `Sample limit reached (${this.sessionSampleCount}/${FREE_LIMITS.maxSamples}). Upgrade for unlimited samples!`,
-        remaining: FREE_LIMITS.maxSamples - this.sessionSampleCount
-      };
-    }
-
-    return { allowed: true };
-  }
-
   // Get processing delay (0 for pro, delay for free)
   getProcessingDelay() {
     return this.isPro() ? 0 : FREE_LIMITS.processingDelayMs;

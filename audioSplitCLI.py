@@ -306,7 +306,7 @@ def rename_with_similarity_groups(output_folder, groups, rr_labeling=False):
 
 def process_file(input_file, output_folder, split_mode, enable_key_detection=False, enable_similarity_grouping=False, **kwargs):
     """Process a single audio file"""
-    filename = os.path.basename(input_file).replace('.wav', '').replace('.mp3', '').replace('.flac', '')
+    filename = os.path.splitext(os.path.basename(input_file))[0]
 
     # Store sample data for similarity grouping
     sample_data = []  # List of (fingerprint, filepath, chunk_number)
@@ -397,9 +397,10 @@ def process_file(input_file, output_folder, split_mode, enable_key_detection=Fal
 
     # Get settings
     silence_threshold = kwargs.get('silence_threshold', -50)
-    naming_pattern = kwargs.get('naming_pattern', '{filename}_bar_{number:03d}')
+    naming_pattern = kwargs.get('naming_pattern', '{filename}_{number:03d}')
     max_samples = kwargs.get('max_samples', 999999)
     processing_delay = kwargs.get('processing_delay', 0)
+    enable_normalization = kwargs.get('enable_normalization', True)
 
     exported_count = 0
     skipped_count = 0
@@ -429,7 +430,8 @@ def process_file(input_file, output_folder, split_mode, enable_key_detection=Fal
             continue
 
         # Normalize
-        chunk = chunk.normalize()
+        if enable_normalization:
+            chunk = chunk.normalize()
 
         # Detect key if enabled
         key_label = ""
@@ -508,10 +510,11 @@ def main():
     parser.add_argument('--random-min-duration', type=float, default=0.5, help='Min chunk duration in seconds')
     parser.add_argument('--transient-sensitivity', type=float, default=0.5, help='Transient sensitivity (0.0-1.0)')
     parser.add_argument('--transient-min-gap', type=float, default=0.5, help='Minimum gap between transients in seconds')
-    parser.add_argument('--naming', default='{filename}_bar_{number:03d}', help='Naming pattern')
+    parser.add_argument('--naming', default='{filename}_{number:03d}', help='Naming pattern')
     parser.add_argument('--threshold', type=float, default=-50, help='Silence threshold in dBFS')
     parser.add_argument('--max-samples', type=int, default=999999, help='Maximum samples to export')
     parser.add_argument('--delay', type=int, default=0, help='Processing delay in milliseconds')
+    parser.add_argument('--enable-normalization', action='store_true', help='Peak normalize exported chunks')
     parser.add_argument('--enable-key-detection', action='store_true', help='Enable musical key detection')
     parser.add_argument('--enable-similarity-grouping', action='store_true', help='Group similar samples')
     parser.add_argument('--similarity-threshold', type=float, default=0.85, help='Similarity threshold (0.0-1.0)')
@@ -544,6 +547,7 @@ def main():
             'naming_pattern': args.naming,
             'max_samples': remaining_samples,
             'processing_delay': args.delay,
+            'enable_normalization': args.enable_normalization,
             'similarity_threshold': args.similarity_threshold,
             'rr_labeling': args.rr_labeling,
         }

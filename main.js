@@ -112,6 +112,7 @@ ipcMain.handle('process-audio', async (event, options) => {
     transientMinGap,
     namingPattern,
     silenceThreshold,
+    enableNormalization,
     enableKeyDetection,
     enableSimilarityGrouping,
     similarityThreshold,
@@ -170,6 +171,10 @@ ipcMain.handle('process-audio', async (event, options) => {
     } else if (splitMode === 'transient') {
       args.push('--transient-sensitivity', transientSensitivity.toString());
       args.push('--transient-min-gap', transientMinGap.toString());
+    }
+
+    if (enableNormalization) {
+      args.push('--enable-normalization');
     }
 
     if (enableKeyDetection) {
