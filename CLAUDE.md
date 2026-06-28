@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mudpie Chopper 2.0** by Bass Daddy Devices — an Electron desktop application for splitting audio recordings into individual sample chunks. Supports four split modes (time, bar, random, transient), musical key detection, similarity grouping, round robin labeling, random name generation, and waveform preview. Designed for music production workflows where you need to chop samples from extended recordings.
+**Mudpie Chopper 2.0** by Bass Daddy Devices — an Electron desktop application for splitting audio recordings into individual sample chunks. Supports four split modes (time, bar, random, transient), musical key detection, similarity grouping, round robin labeling, and random name generation. Designed for music production workflows where you need to chop samples from extended recordings.
 
 ## Environment Setup
 
@@ -74,12 +74,11 @@ python audioSplit.py
 - Passes all split options (mode, key detection, similarity, RR labeling) as CLI args
 
 **Renderer Process (v2 UI):**
-- [index-v2.html](index-v2.html) - UI structure with Tailwind CSS
+- [index-v2.html](index-v2.html) - UI structure with Tailwind CSS, laid out as a 5-step wizard
 - [renderer-v2.js](renderer-v2.js) - Client-side logic, event handling, state management
 - [styles.css](styles.css) - Compiled Tailwind output
 - [styles-src.css](styles-src.css) - Tailwind source with custom directives
 - [preload.js](preload.js) - Secure IPC bridge using contextBridge
-- [peaks.min.js](peaks.min.js) - Peaks.js v3.3.2 UMD bundle for waveform visualization
 
 **Legacy Renderer (v1):**
 - [index.html](index.html) - Original UI
@@ -105,12 +104,12 @@ python audioSplit.py
 
 1. User selects files via Electron dialog -> stored in renderer state
 2. User configures split settings (mode, threshold, naming, key detection, similarity)
-3. User selects output folder and clicks "Split Audio"
+3. User selects output folder and clicks "CHOP MUDPIE"
 4. Renderer sends IPC message to main process with all options
 5. Main process spawns Python CLI with arguments
 6. Python processes files, logs progress to stdout
-7. Main process streams progress to renderer via IPC events
-8. Renderer displays real-time progress and final results
+7. Main process streams progress to renderer via IPC events, shown in a full-screen processing overlay
+8. Renderer displays final results (success message or error) in place of the overlay
 
 ### Processing Modes
 
@@ -173,13 +172,13 @@ Supports template variables in output filenames:
 
 Default pattern: `{filename}_{number:03d}`
 
-### Waveform Preview
+### UI Layout (v2)
 
-- Uses Peaks.js v3.3.2 for interactive waveform visualization
-- Loaded as UMD module (registers as `window.peaks` — lowercase)
-- Requires `<audio>` element with src set to file path
-- v3 API: each view (overview/zoomview) has its own `container` property inside its options object
-- Waveform section must be visible (not `display:none`) before `peaks.init()` so containers have dimensions
+- Single-column wizard: 5 steps, each `<section>` is `min-h-screen` and vertically centers its card (Select Mudpie, Split Mode, Advanced Options, Output Folder, Chop Mudpie)
+- Each step (except the last) has a "Next ↓" button that smooth-scrolls to the next section; normal page scrolling still works everywhere — Next is a convenience, not a gate (no validation blocks moving forward)
+- No responsive multi-column grid — the layout is intentionally always the narrow single-column style regardless of window width
+- "2. Split Mode" shows a live chunk-count estimate that recomputes on every relevant input change. Random mode echoes its count input directly; Time/Bar/Transient modes estimate from the first selected file's duration, read via a plain `<audio>` element's `loadedmetadata` event (no waveform rendering or Python involved) — see `loadPreviewDuration()`/`recomputeChunkEstimate()` in [renderer-v2.js](renderer-v2.js)
+- The processing indicator (`#progress-section`) and the license upsell (`#license-modal`) are both full-screen overlays (`fixed inset-0` + backdrop blur), not inline page content — follow that pattern for any other modal-style UI
 
 ## Build & Packaging
 
@@ -217,7 +216,6 @@ npm run watch-css   # Watch mode for development
 ├── styles.css           - Compiled Tailwind CSS
 ├── styles-src.css       - Tailwind source CSS
 ├── tailwind.config.js   - Tailwind configuration
-├── peaks.min.js         - Peaks.js v3.3.2 waveform library
 ├── audioSplitCLI.py     - Python CLI for audio processing
 ├── audioSplitCLI.spec   - PyInstaller spec file
 ├── names.py             - Word lists for random name generation
@@ -261,9 +259,3 @@ npm run watch-css   # Watch mode for development
 - State stored in module-level variables
 - Real-time progress updates via IPC events
 - Process button disabled until files and output folder selected
-
-**Peaks.js Integration Notes:**
-- v3.3.2 breaking change: `containers` option replaced with `container` inside each view's options
-- UMD bundle registers as `window.peaks` (lowercase p), not `Peaks`
-- Audio element required: `<audio id="peaks-audio" hidden>`
-- Waveform container must be visible before initialization
