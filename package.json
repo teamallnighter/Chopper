@@ -51,10 +51,6 @@
     ],
     "extraResources": [
       {
-        "from": "dist/audioSplitCLI",
-        "to": "audioSplitCLI"
-      },
-      {
         "from": "resources/ffmpeg",
         "to": "ffmpeg"
       }
@@ -65,6 +61,12 @@
       "target": [
         "dmg",
         "zip"
+      ],
+      "extraResources": [
+        {
+          "from": "dist/audioSplitCLI",
+          "to": "audioSplitCLI"
+        }
       ]
     },
     "win": {
@@ -72,6 +74,12 @@
       "target": [
         "nsis",
         "portable"
+      ],
+      "extraResources": [
+        {
+          "from": "dist/audioSplitCLI.exe",
+          "to": "audioSplitCLI.exe"
+        }
       ]
     },
     "linux": {
@@ -80,6 +88,12 @@
       "target": [
         "AppImage",
         "deb"
+      ],
+      "extraResources": [
+        {
+          "from": "dist/audioSplitCLI",
+          "to": "audioSplitCLI"
+        }
       ]
     }
   }

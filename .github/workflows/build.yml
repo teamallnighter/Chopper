@@ -1,0 +1,79 @@
+name: Build Desktop App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install pydub==0.25.1 librosa numpy pyinstaller
+
+      - name: Build Tailwind CSS
+        run: npm run build-css
+
+      - name: Build Python backend (Unix)
+        if: runner.os != 'Windows'
+        run: >-
+          pyinstaller --onefile --name audioSplitCLI
+          --collect-all pydub
+          --add-data "names.py:."
+          --hidden-import pydub --hidden-import pydub.utils
+          --hidden-import pydub.exceptions --hidden-import names
+          audioSplitCLI.py
+
+      - name: Build Python backend (Windows)
+        if: runner.os == 'Windows'
+        run: >-
+          pyinstaller --onefile --name audioSplitCLI
+          --collect-all pydub
+          --add-data "names.py;."
+          --hidden-import pydub --hidden-import pydub.utils
+          --hidden-import pydub.exceptions --hidden-import names
+          audioSplitCLI.py
+
+      - name: Build Electron app (mac)
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac --x64 --arm64
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Build Electron app (windows)
+        if: matrix.os == 'windows-latest'
+        run: npx electron-builder --win --x64
+
+      - name: Build Electron app (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npx electron-builder --linux --x64
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chopper-${{ matrix.os }}
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: warn
