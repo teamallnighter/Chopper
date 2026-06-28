@@ -227,47 +227,6 @@ ipcMain.handle('process-audio', async (event, options) => {
   });
 });
 
-ipcMain.handle('generate-waveform', async (event, filePath) => {
-  return new Promise((resolve, reject) => {
-    const outputPath = path.join(
-      path.dirname(filePath),
-      '.mudpie_waveforms',
-      path.basename(filePath, path.extname(filePath)) + '.dat'
-    );
-
-    const cacheDir = path.dirname(outputPath);
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
-
-    // Use cached if exists
-    if (fs.existsSync(outputPath)) {
-      resolve({ path: outputPath, cached: true });
-      return;
-    }
-
-    // Generate new waveform
-    const pythonProcess = spawn('python3', [
-      path.join(__dirname, 'generate_waveform.py'),
-      filePath,
-      outputPath
-    ]);
-
-    let errorOutput = '';
-    pythonProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (code === 0 && fs.existsSync(outputPath)) {
-        resolve({ path: outputPath, cached: false });
-      } else {
-        reject(new Error('Waveform generation failed'));
-      }
-    });
-  });
-});
-
 // Get file info
 ipcMain.handle('get-file-info', async (event, filePath) => {
   try {

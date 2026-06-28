@@ -7,7 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   selectOutputFolder: () => ipcRenderer.invoke('select-output-folder'),
   processAudio: (options) => ipcRenderer.invoke('process-audio', options),
   getFileInfo: (filePath) => ipcRenderer.invoke('get-file-info', filePath),
-  generateWaveform: (filePath) => ipcRenderer.invoke('generate-waveform', filePath),
   // Listen for progress updates
   onProcessProgress: (callback) => {
     ipcRenderer.on('process-progress', (event, message) => callback(message));

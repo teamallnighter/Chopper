@@ -1,31 +1,14 @@
 // Mudpie Chopper 2.0 - Renderer
 // Bass Daddy Devices
 
-// Load Peaks.js dynamically before anything else
-(function () {
-    const peaksScript = document.createElement('script');
-    peaksScript.src = 'peaks.min.js';
-    peaksScript.onload = () => {
-        if (typeof peaks !== 'undefined') {
-            console.log('✓ Peaks.js loaded successfully');
-            initializeApp();
-        } else {
-            console.error('✗ Peaks.js script loaded but global "peaks" not found');
-        }
-    };
-    peaksScript.onerror = () => {
-        console.error('✗ Failed to load Peaks.js from peaks.min.js');
-    };
-    document.head.appendChild(peaksScript);
-})();
+initializeApp();
 
 function initializeApp() {
 
     // State
     let selectedFiles = [];
     let outputFolder = null;
-    let peaksInstance = null;
-    let waveformDataPath = null;
+    let previewAudioDuration = null;
 
     // License State
     let licenseStatus = null;
@@ -37,13 +20,8 @@ function initializeApp() {
     const outputPath = document.getElementById('output-path');
     const processBtn = document.getElementById('process-btn');
 
-    // DOM Elements - Waveform
-    const waveformSection = document.getElementById('waveform-section');
-    const waveformFilename = document.getElementById('waveform-filename');
-    const togglePlayBtn = document.getElementById('toggle-play-btn');
-    const chopCount = document.getElementById('chop-count');
-    const detectedKey = document.getElementById('detected-key');
-    const detectedBpm = document.getElementById('detected-bpm');
+    // DOM Elements - Chunk Estimate
+    const chunkEstimate = document.getElementById('chunk-estimate');
 
     // DOM Elements - Progress
     const progressSection = document.getElementById('progress-section');
@@ -119,11 +97,7 @@ function initializeApp() {
                 selectedFiles = validFiles;
                 renderFileList();
                 checkCanProcess();
-
-                // Load waveform for first file
-                if (validFiles.length > 0) {
-                    await loadWaveform(validFiles[0]);
-                }
+                loadPreviewDuration(validFiles[0]);
             }
         }
     });
@@ -168,15 +142,21 @@ function initializeApp() {
                 settingsMap[mode].classList.add('active');
             }
 
-            // Update waveform markers
-            updateChopMarkers();
+            recomputeChunkEstimate();
+        });
+    });
+
+    // Next-step buttons
+    document.querySelectorAll('.next-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById(btn.dataset.next)?.scrollIntoView({ behavior: 'smooth' });
         });
     });
 
     // Settings Updates
     transientSensitivity.addEventListener('input', (e) => {
         transientSensitivityValue.textContent = e.target.value;
-        updateChopMarkers();
+        recomputeChunkEstimate();
     });
 
     similarityThreshold.addEventListener('input', (e) => {
@@ -202,9 +182,9 @@ function initializeApp() {
         });
     });
 
-    // Update markers when settings change
+    // Update chunk estimate when settings change
     [timeSeconds, bpm, musicalTime, randomCount, randomMinDuration, transientMinGap].forEach(input => {
-        input.addEventListener('input', () => updateChopMarkers());
+        input.addEventListener('input', () => recomputeChunkEstimate());
     });
 
     // Process Button
@@ -298,12 +278,8 @@ function initializeApp() {
         renderFileList();
         checkCanProcess();
 
-        // Clean up waveform
-        if (peaksInstance) {
-            peaksInstance.destroy();
-            peaksInstance = null;
-        }
-        waveformSection.classList.add('hidden');
+        previewAudioDuration = null;
+        recomputeChunkEstimate();
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -362,108 +338,43 @@ function initializeApp() {
     });
 
     // =============================================================================
-    // WAVEFORM FUNCTIONS
+    // CHUNK ESTIMATE
     // =============================================================================
 
-    async function loadWaveform(filePath) {
-        try {
-            console.log('Loading waveform for:', filePath);
-
-            const fileName = filePath.split('/').pop();
-            waveformFilename.textContent = fileName;
-
-            // Request waveform data generation from main process
-            const waveformData = await window.api.generateWaveform(filePath);
-
-            if (!waveformData || !waveformData.path) {
-                throw new Error('Failed to generate waveform data');
-            }
-
-            waveformDataPath = waveformData.path;
-
-            console.log('Initializing Peaks.js with data from:', waveformDataPath);
-
-            // Set audio source for Peaks.js media element
-            const audioElement = document.getElementById('peaks-audio');
-            audioElement.src = `file://${filePath}`;
-
-            // Initialize peaks.js
-            const options = {
-                overview: {
-                    container: document.getElementById('peaks-overview'),
-                    waveformColor: 'rgba(74, 158, 255, 0.8)',
-                    playedWaveformColor: 'rgba(255, 74, 213, 0.8)',
-                    highlightColor: '#ff4ad5',
-                    highlightStrokeColor: 'transparent',
-                    highlightOpacity: 0.3
-                },
-                zoomview: {
-                    container: document.getElementById('peaks-zoomview'),
-                    waveformColor: 'rgba(74, 158, 255, 0.8)',
-                    playedWaveformColor: 'rgba(255, 74, 213, 0.8)',
-                    highlightColor: '#ff4ad5',
-                    highlightStrokeColor: 'transparent'
-                },
-                mediaElement: audioElement,
-                dataUri: {
-                    arraybuffer: `file://${waveformData.path}`
-                },
-                keyboard: false,
-                pointMarkerColor: '#ff4ad5'
-            };
-
-            if (peaksInstance) {
-                peaksInstance.destroy();
-            }
-
-            // Show waveform section before init so containers have dimensions
-            waveformSection.classList.remove('hidden');
-
-            peaksInstance = peaks.init(options, (err, peaksObj) => {
-                if (err) {
-                    console.error('Peaks.js error:', err);
-                    return;
-                }
-
-                console.log('Peaks.js initialized successfully');
-
-                // Add initial chop markers
-                updateChopMarkers();
-            });
-
-            // Update detected info
-            detectedKey.textContent = waveformData.key || 'Not detected';
-            detectedBpm.textContent = waveformData.bpm ? `${Math.round(waveformData.bpm)} BPM` : 'Not detected';
-
-            console.log('Waveform loaded successfully');
-
-        } catch (error) {
-            console.error('Waveform load error:', error);
-            waveformSection.classList.add('hidden');
-        }
+    function loadPreviewDuration(filePath) {
+        previewAudioDuration = null;
+        const audio = new Audio();
+        audio.addEventListener('loadedmetadata', () => {
+            previewAudioDuration = audio.duration;
+            recomputeChunkEstimate();
+        });
+        audio.addEventListener('error', () => {
+            previewAudioDuration = null;
+            recomputeChunkEstimate();
+        });
+        audio.src = `file://${filePath}`;
     }
 
-    function updateChopMarkers() {
-        if (!peaksInstance) return;
-
-        // Clear existing segments and points
-        const segments = peaksInstance.segments.getSegments();
-        segments.forEach(segment => peaksInstance.segments.removeById(segment.id));
-
-        const points = peaksInstance.points.getPoints();
-        points.forEach(point => peaksInstance.points.removeById(point.id));
-
-        const duration = peaksInstance.player ? peaksInstance.player.getDuration() : 0;
-        if (duration === 0) return;
-
+    function recomputeChunkEstimate() {
         const splitMode = document.querySelector('input[name="split-mode"]:checked').value;
-        let chopPositions = [];
+
+        if (splitMode === 'random') {
+            const count = parseInt(randomCount.value) || 16;
+            chunkEstimate.textContent = `~${count} chunks`;
+            return;
+        }
+
+        if (previewAudioDuration === null) {
+            chunkEstimate.textContent = 'Select a file to estimate chunks';
+            return;
+        }
+
+        const duration = previewAudioDuration;
+        let estimatedCount = 0;
 
         if (splitMode === 'time') {
             const chunkLength = parseFloat(timeSeconds.value) || 2.0;
-            for (let time = chunkLength; time < duration; time += chunkLength) {
-                chopPositions.push(time);
-            }
+            estimatedCount = Math.floor(duration / chunkLength) + 1;
         } else if (splitMode === 'bar') {
             const bpmValue = parseInt(bpm.value) || 120;
             const timeValue = musicalTime.value || '1/4';
@@ -475,40 +386,14 @@ function initializeApp() {
 
             const beats = timeMap[timeValue];
             const chunkLength = (60.0 / bpmValue) * beats;
-
-            for (let time = chunkLength; time < duration; time += chunkLength) {
-                chopPositions.push(time);
-            }
+            estimatedCount = Math.floor(duration / chunkLength) + 1;
         } else if (splitMode === 'transient') {
             const sensitivity = parseFloat(transientSensitivity.value);
             const minGap = parseFloat(transientMinGap.value);
-            const estimatedCount = Math.floor(duration / minGap) * sensitivity;
-
-            for (let i = 0; i < estimatedCount; i++) {
-                const pos = (Math.random() * 0.8 + 0.1 * i / estimatedCount) * duration;
-                chopPositions.push(pos);
-            }
-            chopPositions.sort((a, b) => a - b);
-        } else if (splitMode === 'random') {
-            const count = parseInt(randomCount.value) || 16;
-            for (let i = 0; i < count; i++) {
-                chopPositions.push(Math.random() * duration);
-            }
-            chopPositions.sort((a, b) => a - b);
+            estimatedCount = Math.max(1, Math.floor((duration / minGap) * sensitivity));
         }
 
-        // Add points at chop positions
-        chopPositions.forEach((time, index) => {
-            peaksInstance.points.add({
-                time: time,
-                labelText: `${index + 1}`,
-                color: '#ff4ad5',
-                editable: false
-            });
-        });
-
-        // Update count
-        chopCount.textContent = `${chopPositions.length + 1} chunks`;
+        chunkEstimate.textContent = `~${estimatedCount} chunks`;
     }
 
     // =============================================================================
