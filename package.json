@@ -24,7 +24,7 @@
     "electron",
     "bass-daddy"
   ],
-  "author": "Bass Daddy Devices",
+  "author": "Bass Daddy Devices <me@chrisconnelly.dev>",
   "license": "MIT",
   "dependencies": {
     "electron-updater": "^6.6.2"
